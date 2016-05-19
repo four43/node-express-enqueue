@@ -1,0 +1,30 @@
+{
+  "name": "express-enqueue",
+  "version": "0.0.1",
+  "description": "A rate-limiting middleware that ensures only the desired number of requests are being worked on concurrently.",
+  "main": "main.js",
+  "scripts": {
+    "test": "npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/four43/node-express-enqueue.git"
+  },
+  "keywords": [
+    "express",
+    "rate-limit",
+    "rate",
+    "limit",
+    "performance",
+    "queue",
+    "connections",
+    "requests",
+    "http"
+  ],
+  "author": "Seth Miller <seth@four43.com>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/four43/node-express-enqueue/issues"
+  },
+  "homepage": "https://github.com/four43/node-express-enqueue#readme"
+}
