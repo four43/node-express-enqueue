@@ -26,5 +26,13 @@
   "bugs": {
     "url": "https://github.com/four43/node-express-enqueue/issues"
   },
-  "homepage": "https://github.com/four43/node-express-enqueue#readme"
+  "homepage": "https://github.com/four43/node-express-enqueue#readme",
+  "dependencies": {
+    "guid": "0.0.12",
+    "on-finished": "^2.3.0"
+  },
+  "devDependencies": {
+    "express": "^4.13.4",
+    "mocha": "^2.4.5"
+  }
 }
