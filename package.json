@@ -4,7 +4,9 @@
   "description": "A rate-limiting middleware that ensures only the desired number of requests are being worked on concurrently.",
   "main": "main.js",
   "scripts": {
-    "test": "npm test"
+    "test": "mocha --expose-gc",
+    "coverage": "istanbul cover ./node_modules/mocha/bin/_mocha -- -R spec ./test/*",
+    "coveralls": "npm run coverage && coveralls < coverage/lcov.info"
   },
   "repository": {
     "type": "git",
@@ -32,8 +34,11 @@
     "on-finished": "^2.3.0"
   },
   "devDependencies": {
+    "coveralls": "^2.11.2",
+    "istanbul": "^0.3.18",
     "express": "^4.13.4",
     "mocha": "^2.4.5",
+    "mocha-lcov-reporter": "0.0.2",
     "sinon": "^1.17.4",
     "supertest": "^1.2.0"
   }

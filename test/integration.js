@@ -1,12 +1,12 @@
 const assert = require('assert'),
 	Enqueue = require('../main'),
 	express = require('express'),
-	process = require('process'),
 	request = require('supertest'),
 	sinon = require('sinon');
 
 var app,
 	clock,
+	delay = 100,
 	queue,
 	controllerSpy;
 
@@ -20,19 +20,13 @@ describe("Enqueue", function () {
 		controllerSpy = sinon.spy(function (req, res) {
 			setTimeout(function () {
 				res.status(200).json({foo: "bar"});
-			}, 1000);
+			}, delay);
 		});
 
 		app = express();
 		app.use(queue.getMiddleware());
 		app.get('/test', controllerSpy);
-		clock = sinon.useFakeTimers();
-	});
-
-	afterEach(function () {
-		if (clock) {
-			clock.restore();
-		}
+		app.use(queue.getErrorMiddleware());
 	});
 
 	it("Should run a controller", function (done) {
@@ -41,37 +35,34 @@ describe("Enqueue", function () {
 			assert.equal(res.body.foo, 'bar');
 			done();
 		});
-
-		queue.on(Enqueue.EVENT_PROCESSING_START, () => {
-			if (clock) {
-				clock.tick(1000);
-			}
-		});
 	});
 
 	it("Should queue", function (done) {
 		for (var i = 0; i < 4; i++) {
+			var finishTimes = [];
 			makeRequest(200, (err, res) => {
-				if(controllerSpy.callCount === 2) {
-					assert.equal(Date.now(), 1000);
-					// Fire another set of workers
-					clock.tick(1000);
-				}
-				else if(controllerSpy.callCount === 4) {
-					assert.equal(Date.now(), 2000);
+				assert.ifError(err);
+				finishTimes.push(Date.now());
+				if(finishTimes.length === 4) {
+					assert.ok(finishTimes[1] - finishTimes[0] <= delay * 0.2, "First group didn't run together");
+					// Slight clock drift problem here, check to make sure we're close
+					assert.ok(finishTimes[2] - finishTimes[0] >= delay * 0.9, "The groups should be separate, should wait for first group to finish. Only " + (finishTimes[2] - finishTimes[0]) + "ms. difference");
+					assert.ok(finishTimes[3] - finishTimes[2] <= delay * 0.2, "The second group should run together");
 					done();
 				}
 			});
 		}
-		var queuedCount = 0;
-		queue.on(Enqueue.EVENT_QUEUED, () => {
-			queuedCount++;
-			if (queuedCount === 4) {
-				//Run all the queued controllers.
-				clock.tick(1000);
-			}
+	});
+
+	it("Should error if too many added to queue", function (done) {
+		for (var i = 0; i < 4; i++) {
+			makeRequest(200, (err, res) => {});
+		}
+		makeRequest(503, (err, res) => {
+			assert.ifError(err);
+			done();
 		});
-	})
+	});
 });
 
 function makeRequest(expectedCode, callback) {
