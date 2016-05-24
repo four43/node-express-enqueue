@@ -72,7 +72,7 @@ describe("Enqueue", function () {
 		app = express();
 		app.use(queue.getMiddleware());
 		app.get('/test', controller);
-		app.use(queue.getErrorMiddleware());
+		app.use(queue.getErrorMiddleware(false));
 
 		// Fill the queue with 2 concurrent requests that will take longer than our timeout
 		makeRequest(200, () => {});
@@ -80,7 +80,7 @@ describe("Enqueue", function () {
 		// Our last request will start after out timeout period has passed (the client hung up)
 		makeRequest(503, (err, res) => {
 			assert.ifError(err);
-			assert.ok(res.body.error, 'Request timed out while waiting in queue to be handled');
+			assert.ok(res.text, 'Request timed out while waiting in queue to be handled');
 			done();
 		});
 	});
