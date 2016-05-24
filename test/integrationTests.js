@@ -84,6 +84,20 @@ describe("Enqueue", function () {
 			done();
 		});
 	});
+
+	it("Should Provide stats", function (done) {
+		for (var i = 0; i < 4; i++) {
+			makeRequest(200, () => {});
+		}
+		setTimeout(() => {
+			assert.deepEqual(queue.getStats(), {
+				"total": 2,
+				"inProgress": 2,
+				"waiting": 0
+			});
+			done();
+		}, delay * 1.2);
+	});
 });
 
 function makeRequest(expectedCode, callback) {

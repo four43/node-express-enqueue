@@ -18,6 +18,7 @@ function Enqueue(options) {
 	this.concurrentWorkers = options.concurrentWorkers || os.cpus().length;
 	this.queueMaxSize = options.maxSize || 1000;
 	this.timeout = options.timeout || null;
+
 	this.queue = [];
 	this.inProgressQueue = [];
 }
@@ -67,6 +68,18 @@ Enqueue.prototype.getErrorMiddleware = function (json) {
 		else {
 			return next(err);
 		}
+	};
+};
+
+/**
+ * Gets the current state of the queue.
+ * @returns {{total: number, inProgress: number, waiting: number}}
+ */
+Enqueue.prototype.getStats = function() {
+	return {
+		total: this.queue.length + this.inProgressQueue.length,
+		inProgress: this.inProgressQueue.length,
+		waiting: this.queue.length
 	};
 };
 
