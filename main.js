@@ -22,6 +22,10 @@ function Enqueue(options) {
 	this.inProgressQueue = [];
 }
 
+/**
+ * Gets Middleware to use queue in an app.
+ * @returns {function(this:Enqueue)}
+ */
 Enqueue.prototype.getMiddleware = function () {
 	return function (req, res, next) {
 		if ((this.queue.length + this.inProgressQueue.length) >= this.queueMaxSize) {
@@ -42,6 +46,12 @@ Enqueue.prototype.getMiddleware = function () {
 	}.bind(this);
 };
 
+/**
+ * Gets error middleware to handle errors (timeout, too many in queue)
+ *
+ * @param {boolean} [json=true]
+ * @returns {Function}
+ */
 Enqueue.prototype.getErrorMiddleware = function (json) {
 	json = (json === undefined) ? true : json;
 	return (err, req, res, next) => {
@@ -60,7 +70,12 @@ Enqueue.prototype.getErrorMiddleware = function (json) {
 	};
 };
 
-
+/**
+ * Removes a result from the inProgress queue
+ * @param {ServerResponse} res
+ * @returns {boolean}
+ * @private
+ */
 Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
 	// For loop because we should break when we find it.
 	for (var i = 0; i < this.inProgressQueue.length; i++) {
@@ -72,6 +87,10 @@ Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
 	return false;
 };
 
+/**
+ * Checks the queue to see if we should start any more requests in the queue.
+ * @private
+ */
 Enqueue.prototype._checkQueue = function () {
 	while (this.inProgressQueue.length < this.concurrentWorkers && this.queue.length) {
 		var reqToStart = this.queue.shift();
