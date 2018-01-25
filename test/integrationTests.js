@@ -1,7 +1,8 @@
 const assert = require('assert'),
 	Enqueue = require('../main'),
 	express = require('express'),
-	request = require('supertest');
+	request = require('supertest'),
+	onFinished = require('on-finished');
 
 var app,
 	delay = 100,
@@ -83,6 +84,35 @@ describe("Enqueue", function () {
 			assert.ok(res.text, 'Request timed out while waiting in queue to be handled');
 			done();
 		});
+	});
+
+	it("Should remove aborted request when it is waiting in queue", function (done) {
+		queue = new Enqueue({
+			concurrentWorkers: 1
+		});
+
+		app = express();
+		app.get('/second', function (req, res, next) {
+			secondRequest.abort();
+			onFinished(res, function () {
+				firstResponse.status(200).json({});
+			});
+			next();
+		});
+
+		app.use(queue.getMiddleware());
+
+		var firstResponse;
+		app.get('/first', function (req, res) {
+			firstResponse = res;
+		});
+		app.get('/second', controller);
+		app.get('/third', controller);
+
+		request(app).get('/first').expect(200, function(){});
+		var secondRequest = request(app).get('/second');
+		secondRequest.expect(200, function(){});
+		request(app).get('/third').expect(200, done);
 	});
 
 	it("Should Provide stats", function (done) {

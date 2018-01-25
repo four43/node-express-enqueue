@@ -90,14 +90,18 @@ Enqueue.prototype.getStats = function() {
  * @private
  */
 Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
-	// For loop because we should break when we find it.
-	for (var i = 0; i < this.inProgressQueue.length; i++) {
-		if (this.inProgressQueue[i].res._enqueue.id === res._enqueue.id) {
-			this.inProgressQueue.splice(i, 1);
-			return true;
+	return removeFromQueue(this.inProgressQueue) || removeFromQueue(this.queue);
+
+	function removeFromQueue(queue) {
+		// For loop because we should break when we find it.
+		for (var i = 0; i < queue.length; i++) {
+			if (queue[i].res._enqueue.id === res._enqueue.id) {
+				queue.splice(i, 1);
+				return true;
+			}
 		}
+		return false;
 	}
-	return false;
 };
 
 /**
