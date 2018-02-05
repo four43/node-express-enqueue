@@ -40,7 +40,7 @@ Enqueue.prototype.getMiddleware = function () {
 				this._removeInProgressQueuedWorker(res);
 				this._checkQueue();
 			});
-			if(this.inProgressQueue.length < this.concurrentWorkers) {
+			if (this.inProgressQueue.length < this.concurrentWorkers) {
 				this._checkQueue();
 			}
 		}
@@ -75,18 +75,17 @@ Enqueue.prototype.getErrorMiddleware = function (json) {
  * Gets the current state of the queue.
  * @returns {{total: number, inProgress: number, waiting: number}}
  */
-Enqueue.prototype.getStats = function() {
+Enqueue.prototype.getStats = function () {
 	return {
-		total: this.queue.length + this.inProgressQueue.length,
+		total:      this.queue.length + this.inProgressQueue.length,
 		inProgress: this.inProgressQueue.length,
-		waiting: this.queue.length
+		waiting:    this.queue.length
 	};
 };
 
 /**
  * Removes a result from the inProgress queue
  * @param {ServerResponse} res
- * @returns {boolean}
  * @private
  */
 Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
@@ -100,13 +99,26 @@ Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
 	return false;
 };
 
+/*// For loop because we should break when we find it.
+const elemInProgressId = this.inProgressQueue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
+if(elemInProgressId) {
+	this.inProgressQueue.splice(elemInProgressId, 1);
+}
+else {
+	// If this request never made it to "inProgress"
+	const elemQueueId = this.queue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
+	if(elemQueueId) {
+		this.queue.splice(elemQueueId, 1);
+	}
+}*/
+
 /**
  * Checks the queue to see if we should start any more requests in the queue.
  * @private
  */
 Enqueue.prototype._checkQueue = function () {
 	while (this.inProgressQueue.length < this.concurrentWorkers && this.queue.length) {
-		var reqToStart = this.queue.shift();
+		let reqToStart = this.queue.shift();
 		if (this.timeout === null || (Date.now() - reqToStart.res._enqueue.startTime < this.timeout)) {
 			this.inProgressQueue.push(reqToStart);
 			reqToStart.next();
@@ -116,6 +128,10 @@ Enqueue.prototype._checkQueue = function () {
 		}
 	}
 };
+
+function enqueueEquality(resA, resB) {
+	return resA._enqueue.id === resB._enqueue.id
+}
 
 module.exports = Enqueue;
 
