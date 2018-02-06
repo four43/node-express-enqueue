@@ -89,28 +89,18 @@ Enqueue.prototype.getStats = function () {
  * @private
  */
 Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
-	// For loop because we should break when we find it.
-	for (var i = 0; i < this.inProgressQueue.length; i++) {
-		if (this.inProgressQueue[i].res._enqueue.id === res._enqueue.id) {
-			this.inProgressQueue.splice(i, 1);
-			return true;
+	const elemInProgressId = this.inProgressQueue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
+	if(elemInProgressId !== undefined) {
+		this.inProgressQueue.splice(elemInProgressId, 1);
+	}
+	else {
+		// If this request never made it to "inProgress"
+		const elemQueueId = this.queue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
+		if(elemQueueId !== undefined) {
+			this.queue.splice(elemQueueId, 1);
 		}
 	}
-	return false;
 };
-
-/*// For loop because we should break when we find it.
-const elemInProgressId = this.inProgressQueue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
-if(elemInProgressId) {
-	this.inProgressQueue.splice(elemInProgressId, 1);
-}
-else {
-	// If this request never made it to "inProgress"
-	const elemQueueId = this.queue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
-	if(elemQueueId) {
-		this.queue.splice(elemQueueId, 1);
-	}
-}*/
 
 /**
  * Checks the queue to see if we should start any more requests in the queue.
