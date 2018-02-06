@@ -1,3 +1,4 @@
+'use strict';
 const onFinished = require('on-finished'),
 	MetaData = require('./lib/MetaData'),
 	os = require('os');

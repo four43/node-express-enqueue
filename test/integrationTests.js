@@ -1,3 +1,4 @@
+'use strict';
 const assert = require('assert'),
 	Enqueue = require('../main'),
 	express = require('express'),
