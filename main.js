@@ -1,3 +1,4 @@
+'use strict';
 const onFinished = require('on-finished'),
 	MetaData = require('./lib/MetaData'),
 	os = require('os');
@@ -37,10 +38,11 @@ Enqueue.prototype.getMiddleware = function () {
 			res._enqueue = new MetaData();
 			this.queue.push({req, res, next});
 			onFinished(res, (err, res) => {
-				this._removeInProgressQueuedWorker(res);
+				if(err) console.error(err);
+				this._removeQueuedWorker(res);
 				this._checkQueue();
 			});
-			if(this.inProgressQueue.length < this.concurrentWorkers) {
+			if (this.inProgressQueue.length < this.concurrentWorkers) {
 				this._checkQueue();
 			}
 		}
@@ -75,29 +77,31 @@ Enqueue.prototype.getErrorMiddleware = function (json) {
  * Gets the current state of the queue.
  * @returns {{total: number, inProgress: number, waiting: number}}
  */
-Enqueue.prototype.getStats = function() {
+Enqueue.prototype.getStats = function () {
 	return {
-		total: this.queue.length + this.inProgressQueue.length,
+		total:      this.queue.length + this.inProgressQueue.length,
 		inProgress: this.inProgressQueue.length,
-		waiting: this.queue.length
+		waiting:    this.queue.length
 	};
 };
 
 /**
  * Removes a result from the inProgress queue
  * @param {ServerResponse} res
- * @returns {boolean}
  * @private
  */
-Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
-	// For loop because we should break when we find it.
-	for (var i = 0; i < this.inProgressQueue.length; i++) {
-		if (this.inProgressQueue[i].res._enqueue.id === res._enqueue.id) {
-			this.inProgressQueue.splice(i, 1);
-			return true;
+Enqueue.prototype._removeQueuedWorker = function (res) {
+	const elemInProgressId = this.inProgressQueue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
+	if(elemInProgressId !== -1) {
+		this.inProgressQueue.splice(elemInProgressId, 1);
+	}
+	else {
+		// If this request never made it to "inProgress"
+		const elemQueueId = this.queue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
+		if(elemQueueId !== -1) {
+			this.queue.splice(elemQueueId, 1);
 		}
 	}
-	return false;
 };
 
 /**
@@ -106,7 +110,7 @@ Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
  */
 Enqueue.prototype._checkQueue = function () {
 	while (this.inProgressQueue.length < this.concurrentWorkers && this.queue.length) {
-		var reqToStart = this.queue.shift();
+		let reqToStart = this.queue.shift();
 		if (this.timeout === null || (Date.now() - reqToStart.res._enqueue.startTime < this.timeout)) {
 			this.inProgressQueue.push(reqToStart);
 			reqToStart.next();
@@ -116,6 +120,10 @@ Enqueue.prototype._checkQueue = function () {
 		}
 	}
 };
+
+function enqueueEquality(resA, resB) {
+	return resA._enqueue.id === resB._enqueue.id
+}
 
 module.exports = Enqueue;
 
