@@ -38,7 +38,8 @@ Enqueue.prototype.getMiddleware = function () {
 			res._enqueue = new MetaData();
 			this.queue.push({req, res, next});
 			onFinished(res, (err, res) => {
-				this._removeInProgressQueuedWorker(res);
+				if(err) console.error(err);
+				this._removeQueuedWorker(res);
 				this._checkQueue();
 			});
 			if (this.inProgressQueue.length < this.concurrentWorkers) {
@@ -89,15 +90,15 @@ Enqueue.prototype.getStats = function () {
  * @param {ServerResponse} res
  * @private
  */
-Enqueue.prototype._removeInProgressQueuedWorker = function (res) {
+Enqueue.prototype._removeQueuedWorker = function (res) {
 	const elemInProgressId = this.inProgressQueue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
-	if(elemInProgressId !== undefined) {
+	if(elemInProgressId !== -1) {
 		this.inProgressQueue.splice(elemInProgressId, 1);
 	}
 	else {
 		// If this request never made it to "inProgress"
 		const elemQueueId = this.queue.findIndex((queueElem) => enqueueEquality(queueElem.res, res));
-		if(elemQueueId !== undefined) {
+		if(elemQueueId !== -1) {
 			this.queue.splice(elemQueueId, 1);
 		}
 	}

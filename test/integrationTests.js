@@ -9,7 +9,7 @@ let app,
 	queue,
 	testController;
 
-describe("Enqueue", () =>{
+describe("Enqueue", () => {
 
 	beforeEach(() => {
 		queue = new Enqueue({
@@ -18,7 +18,7 @@ describe("Enqueue", () =>{
 		});
 
 		testController = (req, res) => {
-			setTimeout(() =>{
+			setTimeout(() => {
 				res.status(200).json({foo: "bar"});
 			}, delay);
 		};
@@ -60,6 +60,37 @@ describe("Enqueue", () =>{
 		}
 	});
 
+	it("should queue (only one at a time)", (done) => {
+		let queue = new Enqueue({
+			concurrentWorkers: 1
+		});
+
+		let app = express();
+		app.use(queue.getMiddleware());
+
+		app.get('/test', testController);
+
+		const finishTimes = [];
+
+		const testResults = (finishTimes) => {
+			if (finishTimes.length === 4) {
+				// Done now
+				assert.ok(finishTimes[1] - finishTimes[0] >= delay * 0.9, "Requests ran together");
+				assert.ok(finishTimes[2] - finishTimes[1] >= delay * 0.9, "Requests ran together");
+				assert.ok(finishTimes[3] - finishTimes[2] >= delay * 0.9, "Requests ran together");
+				done();
+			}
+		};
+
+		for (let i = 0; i < 4; i++) {
+			makeRequest(app, 200, (err) => {
+				assert.ifError(err);
+				finishTimes.push(Date.now());
+				testResults(finishTimes)
+			});
+		}
+	});
+
 	it("should error if too many added to queue", (done) => {
 		for (let i = 0; i < 4; i++) {
 			makeRequest(app, 200, () => {
@@ -83,8 +114,10 @@ describe("Enqueue", () =>{
 		app.use(queue.getErrorMiddleware(false));
 
 		// Fill the queue with 2 concurrent requests that will take longer than our timeout
-		makeRequest(app, 200, () => {});
-		makeRequest(app, 200, () => {});
+		makeRequest(app, 200, () => {
+		});
+		makeRequest(app, 200, () => {
+		});
 		// Our last request will start after out timeout period has passed (the client hung up)
 		makeRequest(app, 503, (err, res) => {
 			assert.ifError(err);
@@ -119,7 +152,7 @@ describe("Enqueue", () =>{
 							total:      0
 						}), 10);
 				}
-				catch(err) {
+				catch (err) {
 					return done(err)
 				}
 				done();
@@ -135,43 +168,33 @@ describe("Enqueue", () =>{
 		let app = express();
 		app.use(queue.getMiddleware());
 
-		// Custom controllers
-		let firstReq;
-		let hitFirstController = false;
-		app.get('/first', function (req, res, next) {
-			hitFirstController = true;
-			try {
-				assert.deepEqual(queue.getStats(), {
-					inProgress: 1,
-					waiting:    0,
-					total:      1
-				});
-			}
-			catch(err) {
-				done(err);
-			}
-			firstReq.abort();
-			// Never finish
+		app.get('/test', (req, res, next) => {
+			setTimeout(() => {
+				res.status(200).json({foo: "bar"});
+			}, 100);
 		});
-		app.get('/second', testController);
 
-		firstReq = request(app)
-			.get('/first');
-
-		// Run first request
-		firstReq
-			.then(res => console.log("firstReq finished"))
-			.catch(err => {
-				console.error(err);
-				done(err)
-			});
+		app.get('/never', () => {
+			done(new Error("Shouldn't ever hit this controller, should abort first."));
+		});
 
 		request(app)
-			.get('/second')
+			.get('/test')
+			.expect(200, (res) => {});
+
+		let secondReq = request(app)
+			.get('/never');
+
+		secondReq
+			.then((res) => {});
+
+		// Abort our second request before we even started
+		setTimeout(() => secondReq.abort(), 10);
+
+		request(app)
+			.get('/test')
 			.expect(200, () => {
 				try {
-					console.log("Checking run...");
-					assert.strictEqual(hitFirstController, true);
 					assert.deepEqual(queue.getStats(), {
 						inProgress: 0,
 						waiting:    0,
@@ -179,17 +202,16 @@ describe("Enqueue", () =>{
 					});
 					done()
 				}
-				catch(err) {
+				catch (err) {
 					return done(err);
 				}
 			});
-
-
 	});
 
 	it("should Provide stats", (done) => {
 		for (let i = 0; i < 5; i++) {
-			makeRequest(app, 200, () => {});
+			makeRequest(app, 200, () => {
+			});
 		}
 		setTimeout(() => {
 			assert.deepEqual(queue.getStats(), {
