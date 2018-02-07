@@ -2,6 +2,7 @@
 const assert = require('assert'),
 	Enqueue = require('../main'),
 	express = require('express'),
+	os = require('os'),
 	request = require('supertest');
 
 let app,
@@ -29,12 +30,37 @@ describe("Enqueue", () => {
 		app.use(queue.getErrorMiddleware());
 	});
 
+	it("should use all available cores by default", () => {
+		queue = new Enqueue();
+		assert.equal(queue.concurrentWorkers, os.cpus().length);
+	});
+
 	it("should run a basic controller", (done) => {
 		makeRequest(app, 200, (err, res) => {
 			assert.ifError(err);
 			assert.equal(res.body.foo, 'bar');
 			done();
 		});
+	});
+
+	it("should use user error handler", (done) => {
+		app.get('/app', (req, res, next) => {
+			next(new Error("My error"));
+		});
+
+		app.use((err, req, res, next) => {
+			try {
+				assert.equal(err.message, "My error");
+				done();
+			}
+			catch(err) {
+				done(err);
+			}
+		});
+
+		request(app)
+			.get('/app')
+			.then();
 	});
 
 	it("should queue", (done) => {

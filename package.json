@@ -1,6 +1,6 @@
 {
   "name": "express-enqueue",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "A rate-limiting middleware that ensures only the desired number of requests are being worked on concurrently.",
   "main": "main.js",
   "scripts": {

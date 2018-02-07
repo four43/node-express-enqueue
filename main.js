@@ -16,6 +16,7 @@ const AbstractEnqueue = require('./lib/Error/AbstractEnqueueError'),
  * @constructor
  */
 function Enqueue(options) {
+	if(!options) options = {};
 	this.concurrentWorkers = options.concurrentWorkers || os.cpus().length;
 	this.queueMaxSize = options.maxSize || 1000;
 	this.timeout = options.timeout || null;
